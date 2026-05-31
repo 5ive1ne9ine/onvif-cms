@@ -1,0 +1,14 @@
+.idea/
+.vscode/
+*.iml
+target/
+node_modules/
+dist/
+*.log
+.DS_Store
+docker/mysql-data/
+docker/zlm-record/
+docker/recordings/
+docker/snapshots/
+backend/src/main/resources/static/assets/
+backend/src/main/resources/static/index.html

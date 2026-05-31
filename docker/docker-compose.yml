@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: onvif-cms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: onvif_cms
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ../sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+
+  zlm:
+    image: zlmediakit/zlmediakit:master
+    container_name: onvif-cms-zlm
+    restart: unless-stopped
+    network_mode: host       # WebRTC ICE 与 RTSP 拉流需要 host 网络以避免 NAT 复杂性
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./zlm-config.ini:/opt/media/conf/config.ini:ro
+      - ./zlm-record:/opt/media/bin/www/record
+
+  cms:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: onvif-cms-app
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - zlm
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: onvif_cms
+      DB_USER: root
+      DB_PASSWORD: root
+      ZLM_BASE_URL: http://host.docker.internal:80
+      ZLM_SECRET: 035c73f7-bb6b-4889-a715-d9eb2d1925cc
+      ZLM_EXTERN_IP: 127.0.0.1
+      JWT_SECRET: please-change-me-to-a-very-long-random-string-at-least-32-bytes
+      ONVIF_AES_KEY: 0123456789ABCDEF
+      RECORD_DIR: /data/recordings
+      SNAPSHOT_DIR: /data/snapshots
+      TZ: Asia/Shanghai
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./recordings:/data/recordings
+      - ./snapshots:/data/snapshots
