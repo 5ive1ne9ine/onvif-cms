@@ -23,7 +23,7 @@ services:
     environment:
       TZ: Asia/Shanghai
     volumes:
-      - ./zlm-config.ini:/opt/media/conf/config.ini:ro
+      - ./zlm-config.ini:/opt/media/conf/config.ini
       - ./zlm-record:/opt/media/bin/www/record
 
   cms:
@@ -43,7 +43,7 @@ services:
       DB_USER: root
       DB_PASSWORD: root
       ZLM_BASE_URL: http://host.docker.internal:80
-      ZLM_SECRET: 035c73f7-bb6b-4889-a715-d9eb2d1925cc
+      ZLM_SECRET: onvifCms2024SecretKey4ZlmApi
       ZLM_EXTERN_IP: 127.0.0.1
       JWT_SECRET: please-change-me-to-a-very-long-random-string-at-least-32-bytes
       ONVIF_AES_KEY: 0123456789ABCDEF

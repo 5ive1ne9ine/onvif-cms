@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 18080
   servlet:
     context-path: /
 
@@ -9,7 +9,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/onvif_cms?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -51,7 +51,7 @@ cms:
 
 zlm:
   base-url: http://localhost:80
-  secret: 035c73f7-bb6b-4889-a715-d9eb2d1925cc
+  secret: onvifCms2024SecretKey4ZlmApi
   default-app: live
   rtp-type: 0
   hook-token: internal

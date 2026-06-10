@@ -3,7 +3,6 @@ package com.acme.cms.stream.zlm;
 import com.acme.cms.config.ZlmProperties;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -11,6 +10,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,19 +18,28 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class ZlmClient {
 
     private final RestTemplate restTemplate;
     private final ZlmProperties zlmProps;
 
+    public ZlmClient(RestTemplate restTemplate, ZlmProperties zlmProps) {
+        this.restTemplate = restTemplate;
+        this.zlmProps = zlmProps;
+    }
+
     private String url(String op) {
         return zlmProps.getBaseUrl() + "/index/api/" + op;
     }
 
+    // ==================== API 方法 ====================
+
     public JSONObject post(String op, Map<String, Object> params) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("secret", zlmProps.getSecret());
+        String secret = zlmProps.getSecret();
+        if (secret != null) {
+            form.add("secret", secret);
+        }
         if (params != null) {
             for (Map.Entry<String, Object> e : params.entrySet()) {
                 if (e.getValue() != null) form.add(e.getKey(), String.valueOf(e.getValue()));
@@ -121,11 +130,14 @@ public class ZlmClient {
     }
 
     public byte[] getSnap(String streamUrl, int timeoutSec, int expireSec) {
-        // getSnap 返回的是 image/jpeg 二进制
         try {
             StringBuilder sb = new StringBuilder(url("getSnap"));
-            sb.append("?secret=").append(zlmProps.getSecret())
-                    .append("&url=").append(java.net.URLEncoder.encode(streamUrl, "UTF-8"))
+            String secret = zlmProps.getSecret();
+            if (secret != null && !secret.isEmpty()) {
+                sb.append("?secret=").append(secret);
+            }
+            sb.append(secret != null && !secret.isEmpty() ? "&" : "?")
+                    .append("url=").append(java.net.URLEncoder.encode(streamUrl, "UTF-8"))
                     .append("&timeout_sec=").append(timeoutSec)
                     .append("&expire_sec=").append(expireSec);
             ResponseEntity<byte[]> resp = restTemplate.getForEntity(sb.toString(), byte[].class);
@@ -139,12 +151,17 @@ public class ZlmClient {
      * WebRTC 信令: 将前端 SDP offer 转发给 ZLM, 取回 SDP answer
      */
     public String webrtcSignal(String app, String stream, String sdpOffer) {
-        String u = zlmProps.getBaseUrl() + "/index/api/webrtc"
-                + "?app=" + app + "&stream=" + stream
-                + "&type=" + zlmProps.getWebrtc().getPlayType();
+        StringBuilder sb = new StringBuilder(zlmProps.getBaseUrl() + "/index/api/webrtc");
+        sb.append("?app=").append(app)
+                .append("&stream=").append(stream)
+                .append("&type=").append(zlmProps.getWebrtc().getPlayType());
+        String secret = zlmProps.getSecret();
+        if (secret != null && !secret.isEmpty()) {
+            sb.append("&secret=").append(secret);
+        }
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.parseMediaType("application/sdp"));
         HttpEntity<String> entity = new HttpEntity<>(sdpOffer, h);
-        return restTemplate.postForObject(u, entity, String.class);
+        return restTemplate.postForObject(sb.toString(), entity, String.class);
     }
 }
