@@ -36,6 +36,12 @@ async function play() {
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
     const answer = await streamApi.webrtcOffer(props.cameraId, offer.sdp!)
+
+    // 验证 SDP answer 有效性
+    if (!answer || !answer.sdp || !answer.sdp.startsWith('v=')) {
+      const detail = answer?.msg || answer?.message || '无效的 SDP 响应'
+      throw new Error('SDP 应答无效: ' + detail)
+    }
     await pc.setRemoteDescription({ type: 'answer', sdp: answer.sdp })
   } catch (e: any) {
     status.value = '播放失败: ' + (e.message || e)

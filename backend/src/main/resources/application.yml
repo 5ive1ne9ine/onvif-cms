@@ -51,12 +51,12 @@ cms:
 
 zlm:
   base-url: http://localhost:80
-  secret: onvifCms2024SecretKey4ZlmApi
+  secret: bJSRqAJEZT32TB6as4OGHDVi9cZeliMl
   default-app: live
   rtp-type: 0
   hook-token: internal
   webrtc:
-    extern-ip: 127.0.0.1
+    extern-ip:
     play-type: play
 
 logging:

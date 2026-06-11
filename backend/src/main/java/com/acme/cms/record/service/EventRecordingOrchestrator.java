@@ -41,6 +41,7 @@ public class EventRecordingOrchestrator {
     private final ZlmClient zlmClient;
     private final StorageProperties storageProps;
     private final com.acme.cms.stream.service.StreamService streamService;
+    private final com.acme.cms.config.ZlmProperties zlmProps;
 
     @Qualifier("onvifScheduler")
     private final ThreadPoolTaskScheduler scheduler;
@@ -99,7 +100,6 @@ public class EventRecordingOrchestrator {
 
     private String extractHost(Camera cam) {
         // 录制取本机 ZLM (因为 ensureProxy 后流已在 ZLM)
-        // 简化: 使用 ZLM 配置的 externIp 或 127.0.0.1
-        return "127.0.0.1";
+        return zlmProps.getWebrtc().getExternIp();
     }
 }

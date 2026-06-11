@@ -17,7 +17,7 @@ zlm:
   base-url: ${ZLM_BASE_URL:http://zlm:80}
   secret: ${ZLM_SECRET:onvifCms2024SecretKey4ZlmApi}
   webrtc:
-    extern-ip: ${ZLM_EXTERN_IP:127.0.0.1}
+    extern-ip: ${ZLM_EXTERN_IP:}
 
 logging:
   level:

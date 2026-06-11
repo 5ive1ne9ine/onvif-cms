@@ -40,6 +40,8 @@ public class StreamService {
         if (!zlmClient.isStreamAlive(app, stream)) {
             String key = zlmClient.addStreamProxy(app, stream, rtsp, enableMp4);
             if (key != null) proxyKeys.put(cam.getId(), key);
+            // 等待流就绪（addStreamProxy 是异步的，ZLM 需要时间拉取 RTSP 流）
+            waitForStreamAlive(app, stream, 15_000);
         }
 
         StreamInfo info = new StreamInfo();
@@ -49,6 +51,26 @@ public class StreamService {
         info.setWebrtcSignalUrl("/api/stream/" + cam.getId() + "/webrtc/offer");
         info.setRtsp("rtsp://" + zlmProps.getWebrtc().getExternIp() + ":554/" + app + "/" + stream);
         return info;
+    }
+
+    /**
+     * 轮询等待流在 ZLM 中就绪
+     */
+    private void waitForStreamAlive(String app, String stream, long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (zlmClient.isStreamAlive(app, stream)) {
+                return;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        log.warn("Stream {}/{} not alive after {}ms", app, stream, timeoutMs);
+        throw new BizException(503, "Stream not ready, please try again later");
     }
 
     public StreamInfo ensureProxy(Long cameraId) {

@@ -149,6 +149,7 @@ public class ZlmClient {
 
     /**
      * WebRTC 信令: 将前端 SDP offer 转发给 ZLM, 取回 SDP answer
+     * 返回 ZLM 的原始 JSON 响应字符串
      */
     public String webrtcSignal(String app, String stream, String sdpOffer) {
         StringBuilder sb = new StringBuilder(zlmProps.getBaseUrl() + "/index/api/webrtc");
@@ -162,6 +163,20 @@ public class ZlmClient {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.parseMediaType("application/sdp"));
         HttpEntity<String> entity = new HttpEntity<>(sdpOffer, h);
-        return restTemplate.postForObject(sb.toString(), entity, String.class);
+        String resp = restTemplate.postForObject(sb.toString(), entity, String.class);
+        log.debug("ZLM webrtc resp: {}", resp);
+
+        // 检查 ZLM 返回的 code，如果不为 0 则抛出异常
+        if (resp != null && resp.trim().startsWith("{")) {
+            JSONObject json = JSON.parseObject(resp);
+            int code = json.getIntValue("code");
+            if (code != 0) {
+                String msg = json.getString("msg");
+                log.error("ZLM webrtc error: code={}, msg={}", code, msg);
+                throw new com.acme.cms.common.BizException(502,
+                        "ZLM WebRTC signaling failed: " + (msg != null ? msg : "code=" + code));
+            }
+        }
+        return resp;
     }
 }
