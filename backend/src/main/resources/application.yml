@@ -7,9 +7,9 @@ spring:
   application:
     name: onvif-cms
   datasource:
-    url: jdbc:mysql://localhost:3306/onvif_cms?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://192.168.100.101:23306/onvif_cms?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
     username: root
-    password: root
+    password: admin123
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -33,7 +33,7 @@ mybatis-plus:
 
 cms:
   jwt:
-    secret: please-change-me-to-a-very-long-random-string-at-least-32-bytes
+    secret: bJSRqAJEZT32TB6as4OGHDVi9cZeliMl
     expire-minutes: 720
     header: Authorization
     prefix: "Bearer "
@@ -51,7 +51,7 @@ cms:
 
 zlm:
   base-url: http://localhost:80
-  secret: bJSRqAJEZT32TB6as4OGHDVi9cZeliMl
+  secret: onvifCms2024SecretKey4ZlmApi
   default-app: live
   rtp-type: 0
   hook-token: internal
