@@ -16,6 +16,9 @@ COPY backend/ backend/
 COPY --from=frontend-build /app/backend/src/main/resources/static backend/src/main/resources/static
 RUN mvn -f backend/pom.xml clean package -DskipTests
 
+# 仅取 docker CLI 二进制: 容器内 CMS 通过 docker exec 调用 ZLM 容器的 ffmpeg 转码
+FROM docker:24-cli AS docker-cli
+
 FROM eclipse-temurin:8-jre
 WORKDIR /app
 
@@ -23,8 +26,12 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
+# docker CLI: 转码路径 StreamService 用 `docker exec onvif-cms-zlm ffmpeg ...`
+# 运行时需挂载宿主 /var/run/docker.sock (见 docker-compose.app.yml)
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+
 COPY --from=backend-build /app/backend/target/onvif-cms.jar app.jar
 
 ENV TZ=Asia/Shanghai
-EXPOSE 8080
+EXPOSE 18080
 ENTRYPOINT ["java", "-Xmx1g", "-jar", "/app/app.jar"]

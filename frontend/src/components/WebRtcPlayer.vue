@@ -63,8 +63,10 @@ async function play() {
     // 导致只有 gop_cache 里第一个 I 帧穿过去后画面冻结。TCP-ICE 候选走 vpnkit 的 TCP 代理,双向可靠。
     // TCP-ICE 候选与真 UDP 候选的传输协议字段同为 udp,但 TCP-ICE 带 tcptype 参数。
     // 因此只删掉不含 tcptype 的 udp 候选(真 UDP),保留含 tcptype 的(TCP-ICE),强制浏览器走 TCP。
-    const forcedTcpSdp = answer.sdp.replace(/^a=candidate:[^\r\n]*\sudp\s[^\r\n]*$/gm, (line) =>
-      /tcptype=/.test(line) ? line : '')
+    const forcedTcpSdp = answer.sdp
+      .split(/\r?\n/)
+      .filter((line: string) => !(/^a=candidate:.*\sudp\s/.test(line) && !/tcptype=/.test(line)))
+      .join('\r\n')
     console.log('[webrtc] forced-tcp candidates:', forcedTcpSdp.match(/a=candidate[^\r\n]*/g)?.join(' | '))
     await pc.setRemoteDescription({ type: 'answer', sdp: forcedTcpSdp })
   } catch (e: any) {
