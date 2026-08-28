@@ -1,6 +1,7 @@
 package com.mage.onvifcms.api;
 
 import com.mage.onvifcms.config.AppProperties;
+import com.mage.onvifcms.mage.MageClient;
 import com.mage.onvifcms.repository.CameraRepository;
 import com.mage.onvifcms.repository.DetectionEventRepository;
 import com.mage.onvifcms.service.DetectionScheduler;
@@ -30,16 +31,18 @@ public class DetectionController {
     private final EventStreamHub streamHub;
     private final CameraRepository cameras;
     private final FfmpegService ffmpeg;
+    private final MageClient mage;
     private final AppProperties properties;
 
     public DetectionController(DetectionEventRepository events, DetectionScheduler scheduler,
                                EventStreamHub streamHub, CameraRepository cameras,
-                               FfmpegService ffmpeg, AppProperties properties) {
+                               FfmpegService ffmpeg, MageClient mage, AppProperties properties) {
         this.events = events;
         this.scheduler = scheduler;
         this.streamHub = streamHub;
         this.cameras = cameras;
         this.ffmpeg = ffmpeg;
+        this.mage = mage;
         this.properties = properties;
     }
 
@@ -73,9 +76,11 @@ public class DetectionController {
         long enabled = cameras.findAll().stream().filter(camera -> camera.isDetectionEnabled()).count();
         long todayEvents = events.countByOccurredAtAfter(Instant.now().minus(24, ChronoUnit.HOURS));
         return new SystemStatus(total, online, enabled, todayEvents, ffmpeg.available(),
-                properties.mage().enabled(), properties.mage().baseUrl(), properties.mage().model());
+                properties.mage().enabled(), mage.available(), properties.mage().provider(),
+                properties.mage().baseUrl(), properties.mage().model());
     }
 
     public record SystemStatus(long cameras, long online, long detectionEnabled, long eventsLast24Hours,
-                               boolean ffmpegAvailable, boolean mageEnabled, String mageBaseUrl, String mageModel) {}
+                               boolean ffmpegAvailable, boolean mageEnabled, boolean mageAvailable,
+                               String mageProvider, String mageBaseUrl, String mageModel) {}
 }

@@ -6,7 +6,7 @@ public record MageAnalysis(boolean event, String type, String severity, double c
         type = type == null || type.isBlank() ? "其他" : type;
         severity = normalizeSeverity(severity);
         confidence = Math.max(0, Math.min(1, confidence));
-        summary = summary == null || summary.isBlank() ? "Mage-VL 未提供事件说明" : summary;
+        summary = summary == null || summary.isBlank() ? "视觉模型未提供事件说明" : summary;
     }
 
     private static String normalizeSeverity(String value) {
@@ -17,4 +17,3 @@ public record MageAnalysis(boolean event, String type, String severity, double c
         };
     }
 }
-

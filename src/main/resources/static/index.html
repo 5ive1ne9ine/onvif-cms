@@ -60,7 +60,7 @@
 
     <section id="eventsView" class="view">
       <div class="section-head events-title">
-        <div><h2>Mage‑VL 智能事件</h2><p>连续视频采样、语义判断与实时告警记录</p></div>
+        <div><h2>视觉模型智能事件</h2><p>连续视频采样、语义判断与实时告警记录</p></div>
         <button class="button ghost" id="refreshEvents"><i data-icon="refresh"></i>刷新</button>
       </div>
       <div class="event-layout">
@@ -68,13 +68,15 @@
         <aside class="ai-panel">
           <div class="ai-orb"><span></span><i data-icon="brain"></i></div>
           <p class="eyebrow">VISION ENGINE</p>
-          <h3>Mage‑VL</h3>
+          <h3>视觉分析引擎</h3>
           <dl>
+            <div><dt>后端</dt><dd id="mageProvider">—</dd></div>
             <div><dt>模型</dt><dd id="modelName">—</dd></div>
             <div><dt>推理服务</dt><dd id="mageEndpoint">—</dd></div>
+            <div><dt>模型状态</dt><dd id="mageState">—</dd></div>
             <div><dt>FFmpeg</dt><dd id="ffmpegState">—</dd></div>
           </dl>
-          <p class="muted">检测任务从 RTSP 流按时间顺序采样画面，经 Mage‑VL 判断后只记录超过摄像头置信度阈值的事件。</p>
+          <p class="muted">检测任务从 RTSP 流按时间顺序采样画面，经当前视觉模型判断后只记录超过摄像头置信度阈值的事件。</p>
         </aside>
       </div>
     </section>
@@ -96,9 +98,9 @@
 
   <dialog id="detectionDialog" class="modal">
     <form method="dialog" id="detectionForm">
-      <div class="modal-head"><div><p class="eyebrow">MAGE‑VL RULE</p><h2>智能检测规则</h2></div><button class="icon-button" value="cancel" aria-label="关闭"><i data-icon="close"></i></button></div>
+      <div class="modal-head"><div><p class="eyebrow">VISION RULE</p><h2>智能检测规则</h2></div><button class="icon-button" value="cancel" aria-label="关闭"><i data-icon="close"></i></button></div>
       <input type="hidden" name="cameraId">
-      <label class="switch-row"><span><strong>启用视频流检测</strong><small>按周期采样并调用 Mage‑VL</small></span><input name="enabled" type="checkbox"><i></i></label>
+      <label class="switch-row"><span><strong>启用视频流检测</strong><small>按周期采样并调用视觉模型</small></span><input name="enabled" type="checkbox"><i></i></label>
       <label>检测提示词<textarea name="prompt" rows="4" maxlength="4000" placeholder="描述需要关注的事件"></textarea></label>
       <div class="form-row">
         <label>分析间隔（秒）<input name="intervalSeconds" type="number" min="10" max="3600" value="30"></label>

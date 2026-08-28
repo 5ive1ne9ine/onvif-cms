@@ -78,7 +78,7 @@ function cameraCard(camera) {
       <div class="camera-info-head">
         <div><h3 title="${escapeHtml(camera.name)}">${escapeHtml(camera.name)}</h3><p>${escapeHtml(camera.host)} · ${escapeHtml(model)}</p></div>
         <div class="camera-actions">
-          <button data-action="detection" title="Mage-VL 规则">${icons.brain}</button>
+          <button data-action="detection" title="视觉模型规则">${icons.brain}</button>
           <button data-action="settings" title="设备配置">${icons.settings}</button>
         </div>
       </div>
@@ -114,12 +114,15 @@ async function loadStatus(silent = false) {
     $('#aiCount').textContent = status.detectionEnabled;
     $('#todayEventCount').textContent = status.eventsLast24Hours;
     $('#modelName').textContent = status.mageModel;
+    $('#mageProvider').textContent = status.mageProvider.toUpperCase();
     $('#mageEndpoint').textContent = status.mageBaseUrl;
+    $('#mageState').textContent = status.mageAvailable ? 'READY' : 'OFFLINE';
+    $('#mageState').style.color = status.mageAvailable ? 'var(--green)' : 'var(--red)';
     $('#ffmpegState').textContent = status.ffmpegAvailable ? 'READY' : 'NOT FOUND';
     $('#ffmpegState').style.color = status.ffmpegAvailable ? 'var(--green)' : 'var(--red)';
-    const healthy = status.ffmpegAvailable;
+    const healthy = status.ffmpegAvailable && (!status.mageEnabled || status.mageAvailable);
     $('#systemDot').className = `status-dot ${healthy ? 'ok' : 'error'}`;
-    $('#systemLabel').textContent = healthy ? '系统就绪' : '缺少 FFmpeg';
+    $('#systemLabel').textContent = healthy ? '系统就绪' : (status.ffmpegAvailable ? '模型服务离线' : '缺少 FFmpeg');
   } catch (error) {
     $('#systemDot').className = 'status-dot error';
     $('#systemLabel').textContent = '服务异常';
@@ -139,7 +142,7 @@ function eventItem(event) {
 function renderEvents() {
   $('#eventFeed').innerHTML = state.events.length
     ? state.events.map(eventItem).join('')
-    : '<div class="empty-state"><h3>暂无智能事件</h3><p>启用摄像头 Mage‑VL 检测后，超过阈值的事件会显示在这里。</p></div>';
+    : '<div class="empty-state"><h3>暂无智能事件</h3><p>启用摄像头视觉模型检测后，超过阈值的事件会显示在这里。</p></div>';
 }
 
 async function loadEvents(silent = false) {
@@ -295,7 +298,7 @@ $('#detectionForm').addEventListener('submit', async event => {
     });
     $('#detectionDialog').close();
     await Promise.all([loadCameras(true), loadStatus(true)]);
-    toast('Mage‑VL 检测规则已保存', 'success');
+    toast('视觉模型检测规则已保存', 'success');
   } catch (error) { toast(error.message, 'error'); }
   finally { $('#saveDetection').disabled = false; }
 });
@@ -314,7 +317,7 @@ $('#analyzeNow').addEventListener('click', async () => {
   button.querySelector('span').textContent = '已提交';
   try {
     await api(`/api/cameras/${state.selectedCamera.id}/detection/run`, { method: 'POST' });
-    toast('Mage‑VL 分析任务已提交', 'success');
+    toast('视觉模型分析任务已提交', 'success');
   } catch (error) { toast(error.message, 'error'); }
   setTimeout(() => { button.disabled = false; button.querySelector('span').textContent = '立即分析'; }, 2500);
 });
@@ -332,4 +335,3 @@ setInterval(updateClock, 1000);
 Promise.all([loadCameras(), loadEvents(), loadStatus()]);
 setInterval(() => { loadCameras(true); loadStatus(true); }, 15000);
 connectEvents();
-

@@ -40,8 +40,14 @@ public class MageClient {
 
     public MageAnalysis analyze(List<byte[]> frames, String rulePrompt) {
         if (!properties.mage().enabled()) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Mage-VL 检测已被 MAGE_ENABLED 关闭");
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "视觉模型检测已被 MAGE_ENABLED 关闭");
         }
+        return "ollama".equalsIgnoreCase(properties.mage().provider())
+                ? analyzeWithOllama(frames, rulePrompt)
+                : analyzeWithOpenAi(frames, rulePrompt);
+    }
+
+    private MageAnalysis analyzeWithOpenAi(List<byte[]> frames, String rulePrompt) {
         try {
             List<Map<String, Object>> content = new ArrayList<>();
             for (byte[] frame : frames) {
@@ -57,6 +63,7 @@ public class MageClient {
                     Map.of("role", "user", "content", content)));
             requestBody.put("temperature", 0.1);
             requestBody.put("max_tokens", 256);
+            requestBody.put("stream", false);
 
             HttpRequest request = HttpRequest.newBuilder(chatEndpoint())
                     .timeout(Duration.ofSeconds(properties.mage().requestTimeoutSeconds()))
@@ -66,7 +73,7 @@ public class MageClient {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new ApiException(HttpStatus.BAD_GATEWAY,
-                        "Mage-VL 服务返回 HTTP " + response.statusCode() + "：" + concise(response.body()));
+                        "视觉模型服务返回 HTTP " + response.statusCode() + "：" + concise(response.body()));
             }
             JsonNode root = mapper.readTree(response.body());
             JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
@@ -76,9 +83,59 @@ public class MageClient {
             throw exception;
         } catch (java.net.ConnectException exception) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "无法连接 Mage-VL 服务 " + properties.mage().baseUrl());
+                    "无法连接视觉模型服务 " + properties.mage().baseUrl());
         } catch (Exception exception) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "Mage-VL 分析失败：" + exception.getMessage());
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "视觉模型分析失败：" + exception.getMessage());
+        }
+    }
+
+    private MageAnalysis analyzeWithOllama(List<byte[]> frames, String rulePrompt) {
+        try {
+            List<String> images = frames.stream()
+                    .map(frame -> Base64.getEncoder().encodeToString(frame))
+                    .toList();
+            Map<String, Object> requestBody = new LinkedHashMap<>();
+            requestBody.put("model", properties.mage().model());
+            requestBody.put("messages", List.of(
+                    Map.of("role", "system", "content", SYSTEM_PROMPT),
+                    Map.of("role", "user", "content", "检测规则：" + rulePrompt, "images", images)));
+            requestBody.put("stream", false);
+            requestBody.put("think", false);
+            requestBody.put("format", detectionSchema());
+            requestBody.put("options", Map.of("temperature", 0.1, "num_predict", 256));
+
+            HttpRequest request = HttpRequest.newBuilder(ollamaChatEndpoint())
+                    .timeout(Duration.ofSeconds(properties.mage().requestTimeoutSeconds()))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(requestBody), StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new ApiException(HttpStatus.BAD_GATEWAY,
+                        "Ollama 返回 HTTP " + response.statusCode() + "：" + concise(response.body()));
+            }
+            JsonNode root = mapper.readTree(response.body());
+            return parseModelOutput(root.path("message").path("content").asText());
+        } catch (ApiException exception) {
+            throw exception;
+        } catch (java.net.ConnectException exception) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "无法连接 Ollama 服务 " + properties.mage().baseUrl());
+        } catch (Exception exception) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "Ollama 分析失败：" + exception.getMessage());
+        }
+    }
+
+    public boolean available() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(modelsEndpoint())
+                    .timeout(Duration.ofSeconds(3))
+                    .GET()
+                    .build();
+            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+            return response.statusCode() >= 200 && response.statusCode() < 300;
+        } catch (Exception ignored) {
+            return false;
         }
     }
 
@@ -90,13 +147,36 @@ public class MageClient {
                     node.path("severity").asText("LOW"), node.path("confidence").asDouble(0),
                     node.path("summary").asText(""), raw);
         } catch (Exception exception) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "Mage-VL 未返回约定的 JSON：" + concise(raw));
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "视觉模型未返回约定的 JSON：" + concise(raw));
         }
     }
 
     private URI chatEndpoint() {
         String base = properties.mage().baseUrl().replaceAll("/+$", "");
         return URI.create(base + "/chat/completions");
+    }
+
+    private URI modelsEndpoint() {
+        String base = properties.mage().baseUrl().replaceAll("/+$", "");
+        return URI.create(base + "/models");
+    }
+
+    private URI ollamaChatEndpoint() {
+        String base = properties.mage().baseUrl().replaceAll("/+$", "").replaceFirst("/v1$", "");
+        return URI.create(base + "/api/chat");
+    }
+
+    private Map<String, Object> detectionSchema() {
+        Map<String, Object> properties = new LinkedHashMap<>();
+        properties.put("event", Map.of("type", "boolean"));
+        properties.put("type", Map.of("type", "string"));
+        properties.put("severity", Map.of("type", "string", "enum", List.of("LOW", "MEDIUM", "HIGH", "CRITICAL")));
+        properties.put("confidence", Map.of("type", "number", "minimum", 0, "maximum", 1));
+        properties.put("summary", Map.of("type", "string"));
+        return Map.of(
+                "type", "object",
+                "properties", properties,
+                "required", List.of("event", "type", "severity", "confidence", "summary"));
     }
 
     private String extractJson(String raw) {
@@ -113,4 +193,3 @@ public class MageClient {
         return normalized.length() <= 300 ? normalized : normalized.substring(0, 300) + "…";
     }
 }
-

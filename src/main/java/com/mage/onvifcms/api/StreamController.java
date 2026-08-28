@@ -22,6 +22,7 @@ public class StreamController {
 
     @GetMapping(value = "/preview.mjpg", produces = "multipart/x-mixed-replace;boundary=frame")
     public ResponseEntity<StreamingResponseBody> preview(@PathVariable("cameraId") Long cameraId) {
+        ffmpeg.validateStream(cameraId);
         StreamingResponseBody body = output -> ffmpeg.streamMjpeg(cameraId, output);
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())

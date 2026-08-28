@@ -7,6 +7,8 @@ server:
       force: true
 
 spring:
+  config:
+    import: optional:file:./application-local.yml
   application:
     name: onvif-cms
   datasource:
@@ -48,6 +50,7 @@ app:
     sample-seconds: ${MAGE_SAMPLE_SECONDS:8}
   mage:
     enabled: ${MAGE_ENABLED:true}
+    provider: ${MAGE_PROVIDER:sglang}
     base-url: ${MAGE_BASE_URL:http://localhost:30000/v1}
     model: ${MAGE_MODEL:microsoft/Mage-VL}
     max-frames: ${MAGE_MAX_FRAMES:6}
@@ -55,4 +58,3 @@ app:
     request-timeout-seconds: ${MAGE_TIMEOUT_SECONDS:180}
   security:
     encryption-key: ${APP_SECURITY_KEY:change-me-in-production}
-

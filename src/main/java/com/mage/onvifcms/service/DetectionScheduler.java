@@ -60,9 +60,9 @@ public class DetectionScheduler {
         if (!running.add(cameraId)) throw new ApiException(HttpStatus.CONFLICT, "该摄像头正在分析中");
         if (!analysisSlots.tryAcquire()) {
             running.remove(cameraId);
-            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Mage-VL 并发任务已满，请稍后重试");
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "视觉模型并发任务已满，请稍后重试");
         }
-        statuses.put(cameraId, new DetectionStatus("RUNNING", "正在提取视频帧并调用 Mage-VL", Instant.now(), null));
+        statuses.put(cameraId, new DetectionStatus("RUNNING", "正在提取视频帧并调用视觉模型", Instant.now(), null));
         executor.submit(() -> {
             try {
                 DetectionAnalysisService.Result result = analysisService.analyze(cameraId);
@@ -70,7 +70,7 @@ public class DetectionScheduler {
             } catch (Exception exception) {
                 String message = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
                 statuses.put(cameraId, new DetectionStatus("ERROR", message, Instant.now(), message));
-                log.warn("Mage-VL analysis failed for camera {}: {}", cameraId, message);
+                log.warn("Vision model analysis failed for camera {}: {}", cameraId, message);
             } finally {
                 running.remove(cameraId);
                 analysisSlots.release();

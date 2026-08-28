@@ -13,7 +13,7 @@ class MageClientTest {
             new AppProperties(
                     new AppProperties.Discovery(30, 1000),
                     new AppProperties.Ffmpeg("ffmpeg", 8, 1280, 8),
-                    new AppProperties.Mage(true, "http://localhost:30000/v1", "microsoft/Mage-VL", 6, 2, 60),
+                    new AppProperties.Mage(true, "sglang", "http://localhost:30000/v1", "microsoft/Mage-VL", 6, 2, 60),
                     new AppProperties.Security("test-key")),
             HttpClient.newHttpClient(), new ObjectMapper());
 
@@ -40,4 +40,3 @@ class MageClientTest {
         assertThat(result.confidence()).isEqualTo(1);
     }
 }
-

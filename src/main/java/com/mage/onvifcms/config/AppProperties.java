@@ -12,7 +12,7 @@ public record AppProperties(
     public AppProperties {
         discovery = discovery == null ? new Discovery(30, 1800) : discovery;
         ffmpeg = ffmpeg == null ? new Ffmpeg("ffmpeg", 8, 1280, 8) : ffmpeg;
-        mage = mage == null ? new Mage(true, "http://localhost:30000/v1", "microsoft/Mage-VL", 6, 8, 180) : mage;
+        mage = mage == null ? new Mage(true, "sglang", "http://localhost:30000/v1", "microsoft/Mage-VL", 6, 8, 180) : mage;
         security = security == null ? new Security("change-me-in-production") : security;
     }
 
@@ -20,9 +20,8 @@ public record AppProperties(
 
     public record Ffmpeg(String executable, int previewFps, int previewWidth, int sampleSeconds) {}
 
-    public record Mage(boolean enabled, String baseUrl, String model, int maxFrames,
+    public record Mage(boolean enabled, String provider, String baseUrl, String model, int maxFrames,
                        int maxConcurrentAnalyses, int requestTimeoutSeconds) {}
 
     public record Security(String encryptionKey) {}
 }
-
