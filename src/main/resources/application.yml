@@ -1,0 +1,58 @@
+server:
+  port: ${SERVER_PORT:28080}
+  shutdown: graceful
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: onvif-cms
+  datasource:
+    url: ${DB_URL:jdbc:mysql://192.168.100.101:23306/onvif_cms?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:admin123}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Shanghai
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  lifecycle:
+    timeout-per-shutdown-phase: 15s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  discovery:
+    interval-seconds: ${DISCOVERY_INTERVAL_SECONDS:30}
+    timeout-millis: ${DISCOVERY_TIMEOUT_MILLIS:1800}
+  ffmpeg:
+    executable: ${FFMPEG_PATH:ffmpeg}
+    preview-fps: ${PREVIEW_FPS:8}
+    preview-width: ${PREVIEW_WIDTH:1280}
+    sample-seconds: ${MAGE_SAMPLE_SECONDS:8}
+  mage:
+    enabled: ${MAGE_ENABLED:true}
+    base-url: ${MAGE_BASE_URL:http://localhost:30000/v1}
+    model: ${MAGE_MODEL:microsoft/Mage-VL}
+    max-frames: ${MAGE_MAX_FRAMES:6}
+    max-concurrent-analyses: ${MAGE_MAX_CONCURRENT:8}
+    request-timeout-seconds: ${MAGE_TIMEOUT_SECONDS:180}
+  security:
+    encryption-key: ${APP_SECURITY_KEY:change-me-in-production}
+

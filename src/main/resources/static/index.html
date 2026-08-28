@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0f1c">
+  <title>Sentinel · ONVIF 智能视频中枢</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='6' width='20' height='20' rx='2' transform='rotate(45 16 16)' fill='%230c1725' stroke='%2337d8ee'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2337d8ee'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><span></span><span></span><span></span></div>
+      <div><strong>SENTINEL</strong><small>ONVIF CMS</small></div>
+    </div>
+    <nav>
+      <button class="nav-item active" data-view="monitor"><i data-icon="grid"></i><span>实时监控</span></button>
+      <button class="nav-item" data-view="events"><i data-icon="pulse"></i><span>智能事件</span><b id="eventBadge" hidden>0</b></button>
+    </nav>
+    <div class="sidebar-status">
+      <span class="status-dot" id="systemDot"></span>
+      <div><strong id="systemLabel">正在检查</strong><small>系统运行状态</small></div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">局域网视频感知</p>
+        <h1 id="pageTitle">实时监控</h1>
+      </div>
+      <div class="top-actions">
+        <div class="clock"><span id="clockTime">--:--:--</span><small id="clockDate">----/--/--</small></div>
+        <button class="button primary" id="scanButton"><i data-icon="radar"></i><span>搜索设备</span></button>
+      </div>
+    </header>
+
+    <section id="monitorView" class="view active">
+      <div class="metrics">
+        <article><div class="metric-icon cyan"><i data-icon="camera"></i></div><div><strong id="cameraCount">0</strong><span>发现设备</span></div><em>LAN</em></article>
+        <article><div class="metric-icon green"><i data-icon="signal"></i></div><div><strong id="onlineCount">0</strong><span>在线通道</span></div><em>LIVE</em></article>
+        <article><div class="metric-icon violet"><i data-icon="brain"></i></div><div><strong id="aiCount">0</strong><span>AI 检测中</span></div><em>MAGE</em></article>
+        <article><div class="metric-icon amber"><i data-icon="alert"></i></div><div><strong id="todayEventCount">0</strong><span>24 小时事件</span></div><em>EVENT</em></article>
+      </div>
+
+      <div class="section-head">
+        <div><h2>摄像头矩阵</h2><p>自动发现局域网 ONVIF Profile S/T 设备</p></div>
+        <div class="legend"><span><i class="dot online"></i>在线</span><span><i class="dot offline"></i>待配置</span></div>
+      </div>
+      <div id="cameraGrid" class="camera-grid"></div>
+      <div id="cameraEmpty" class="empty-state" hidden>
+        <div class="radar-visual"><span></span><span></span><i data-icon="camera"></i></div>
+        <h3>尚未发现摄像头</h3>
+        <p>确认设备与本机位于同一局域网，然后开始 WS‑Discovery 搜索。</p>
+        <button class="button primary" data-action="scan"><i data-icon="radar"></i>立即搜索</button>
+      </div>
+    </section>
+
+    <section id="eventsView" class="view">
+      <div class="section-head events-title">
+        <div><h2>Mage‑VL 智能事件</h2><p>连续视频采样、语义判断与实时告警记录</p></div>
+        <button class="button ghost" id="refreshEvents"><i data-icon="refresh"></i>刷新</button>
+      </div>
+      <div class="event-layout">
+        <div class="event-feed" id="eventFeed"></div>
+        <aside class="ai-panel">
+          <div class="ai-orb"><span></span><i data-icon="brain"></i></div>
+          <p class="eyebrow">VISION ENGINE</p>
+          <h3>Mage‑VL</h3>
+          <dl>
+            <div><dt>模型</dt><dd id="modelName">—</dd></div>
+            <div><dt>推理服务</dt><dd id="mageEndpoint">—</dd></div>
+            <div><dt>FFmpeg</dt><dd id="ffmpegState">—</dd></div>
+          </dl>
+          <p class="muted">检测任务从 RTSP 流按时间顺序采样画面，经 Mage‑VL 判断后只记录超过摄像头置信度阈值的事件。</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="cameraDialog" class="modal">
+    <form method="dialog" id="cameraForm">
+      <div class="modal-head"><div><p class="eyebrow">DEVICE ACCESS</p><h2>配置摄像头</h2></div><button class="icon-button" value="cancel" aria-label="关闭"><i data-icon="close"></i></button></div>
+      <input type="hidden" name="cameraId">
+      <label>显示名称<input name="name" maxlength="160" placeholder="例如：东门云台"></label>
+      <div class="form-row">
+        <label>ONVIF 用户名<input name="username" maxlength="160" autocomplete="username" placeholder="admin"></label>
+        <label>ONVIF 密码<input name="password" type="password" maxlength="512" autocomplete="current-password" placeholder="不修改请留空"></label>
+      </div>
+      <p class="form-help">保存后将自动读取设备信息、媒体 Profile、RTSP 地址与 PTZ 能力。密码使用 AES‑GCM 加密后保存。</p>
+      <div class="modal-actions"><button class="button ghost" value="cancel">取消</button><button class="button primary" id="saveCamera" value="default">连接并保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="detectionDialog" class="modal">
+    <form method="dialog" id="detectionForm">
+      <div class="modal-head"><div><p class="eyebrow">MAGE‑VL RULE</p><h2>智能检测规则</h2></div><button class="icon-button" value="cancel" aria-label="关闭"><i data-icon="close"></i></button></div>
+      <input type="hidden" name="cameraId">
+      <label class="switch-row"><span><strong>启用视频流检测</strong><small>按周期采样并调用 Mage‑VL</small></span><input name="enabled" type="checkbox"><i></i></label>
+      <label>检测提示词<textarea name="prompt" rows="4" maxlength="4000" placeholder="描述需要关注的事件"></textarea></label>
+      <div class="form-row">
+        <label>分析间隔（秒）<input name="intervalSeconds" type="number" min="10" max="3600" value="30"></label>
+        <label>事件置信度阈值<input name="confidenceThreshold" type="number" min="0" max="1" step="0.05" value="0.6"></label>
+      </div>
+      <div class="modal-actions"><button class="button ghost" value="cancel">取消</button><button class="button primary" id="saveDetection" value="default">保存规则</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="previewDialog" class="preview-modal">
+    <div class="preview-shell">
+      <header><div><span class="live-dot"></span><div><h2 id="previewTitle">实时画面</h2><p id="previewMeta">—</p></div></div><button class="icon-button" id="closePreview" aria-label="关闭"><i data-icon="close"></i></button></header>
+      <div class="video-stage">
+        <img id="previewImage" alt="摄像头实时画面">
+        <div id="previewLoading" class="video-loading"><span></span><p>正在建立 RTSP 视频链路…</p></div>
+        <div class="video-overlay"><span>MJPEG · TCP</span><time id="videoTime">--:--:--</time></div>
+      </div>
+      <footer>
+        <div class="ptz-control" id="ptzControl">
+          <button data-pan="0" data-tilt="1" title="向上"><i data-icon="up"></i></button>
+          <button data-pan="-1" data-tilt="0" title="向左"><i data-icon="left"></i></button>
+          <button data-stop title="停止"><i data-icon="stop"></i></button>
+          <button data-pan="1" data-tilt="0" title="向右"><i data-icon="right"></i></button>
+          <button data-pan="0" data-tilt="-1" title="向下"><i data-icon="down"></i></button>
+        </div>
+        <div class="zoom-control"><span>变焦</span><button data-zoom="-0.6"><i data-icon="minus"></i></button><button data-zoom="0.6"><i data-icon="plus"></i></button></div>
+        <button class="button ai-button" id="analyzeNow"><i data-icon="brain"></i><span>立即分析</span></button>
+      </footer>
+    </div>
+  </dialog>
+
+  <div id="toastStack" class="toast-stack"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
